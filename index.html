@@ -46,7 +46,7 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--mute
 .note{font-size:13px;margin-top:4px}
 .badge{font-size:11px;font-weight:700;border-radius:6px;padding:2px 7px;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;background:var(--line);color:var(--muted)}
 .badge.exam{background:var(--dangerbg);color:var(--danger)}
-.badge.project,.badge.paper{background:var(--warnbg);color:var(--warn)}
+.badge.project,.badge.paper,.badge.present{background:var(--warnbg);color:var(--warn)}
 .badge.quiz{background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)}
 .done .title{text-decoration:line-through;color:var(--muted)}
 .done .badge{opacity:.5}
@@ -58,7 +58,26 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--mute
 .big{border-left:3px solid var(--danger);padding-left:10px;margin-left:-13px}
 footer{margin-top:36px;color:var(--muted);font-size:12px;text-align:center}
 .err{color:var(--danger)}
-@media (max-width:520px){h1{font-size:24px}.item,.ahead .item{grid-template-columns:62px 1fr}.item .badge{grid-column:2;justify-self:start}}
+.weeknav{display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap}
+.navbtn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;width:34px;height:34px;font:inherit;font-size:18px;line-height:1;cursor:pointer;display:grid;place-items:center}
+.navbtn:hover,.chip:hover{border-color:var(--muted)}
+.weeknav .sub{font-size:14px;font-weight:600;color:var(--ink);min-width:0}
+.todaybtn{border:0;background:var(--accent);color:#fff;border-radius:999px;padding:6px 12px;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}
+.item{grid-template-columns:24px 70px 1fr auto;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.ahead .item{grid-template-columns:24px 86px 1fr auto}
+.box{width:20px;height:20px;border-radius:50%;border:2px solid var(--line);margin-top:1px;display:grid;place-items:center;transition:background .15s,border-color .15s}
+.item:hover .box{border-color:var(--muted)}
+.done .box{background:var(--ok);border-color:var(--ok)}
+.done .box::after{content:"";width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.done .note,.done .meta{opacity:.6}
+.progress{font-size:12px;color:var(--muted);font-weight:500}
+.act{font-size:11.5px;font-weight:700;border-radius:6px;padding:1px 7px;white-space:nowrap}
+.act.turnin{background:var(--accent);color:#fff}
+.act.do{border:1px dashed var(--muted);color:var(--muted)}
+.item.isdo:not(.done) .title{font-weight:500}
+.item.isdo .box{border-style:dashed}
+.chips + .chips{margin-top:8px}
+@media (max-width:520px){h1{font-size:24px}.item,.ahead .item{grid-template-columns:24px 62px 1fr}.item .badge{grid-column:3;justify-self:start}}
 </style>
 </head>
 <body>
@@ -66,27 +85,48 @@ footer{margin-top:36px;color:var(--muted);font-size:12px;text-align:center}
   <header>
     <div>
       <h1 id="title">School Week</h1>
-      <div class="sub" id="range">Loading…</div>
+      <div class="weeknav">
+        <button class="navbtn" id="prev" aria-label="Previous week">‹</button>
+        <div class="sub" id="range">Loading…</div>
+        <button class="navbtn" id="next" aria-label="Next week">›</button>
+        <button class="todaybtn" id="back" hidden>Back to this week</button>
+      </div>
     </div>
     <div class="sub" id="updated"></div>
   </header>
   <div class="card summary" id="summary" hidden></div>
   <div id="headsWrap" hidden><h2>Heads up</h2><div class="heads" id="heads"></div></div>
   <div class="chips" id="chips"></div>
-  <h2>This week</h2>
+  <div class="chips" id="actChips"></div>
+  <h2><span id="weekLabel">This week</span> <span class="progress" id="progress"></span></h2>
   <div id="week"></div>
   <h2>Coming up</h2>
   <div class="card ahead" id="ahead"></div>
-  <footer id="foot">Pulled from Learning Suite and Canvas. The week rolls over on its own every Sunday.</footer>
+  <footer id="foot">Pulled from Learning Suite and Canvas. Tap anything to cross it off (saved on this device). Use ‹ › or the arrow keys to change weeks.</footer>
 </div>
 <script>
 const PALETTE = ['#2563eb','#db2777','#059669','#d97706','#7c3aed','#0891b2','#dc2626','#65a30d'];
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-let DATA = null, filter = localGet('sw-filter') || 'all';
+let DATA = null, filter = localGet('sw-filter') || 'all', actFilter = localGet('sw-act') || 'all', weekOffset = 0;
+const ACT_LABEL = { turnin: '↑ Turn in', do: 'Just do' };
 
 function localGet(k){ try { return localStorage.getItem(k); } catch { return null; } }
 function localSet(k,v){ try { localStorage.setItem(k,v); } catch {} }
+
+// Crossed-off state: your taps override the synced `done` flag, saved per device.
+let marks = {};
+try { marks = JSON.parse(localGet('sw-done') || '{}') || {}; } catch {}
+const keyOf = it => `${it.date}|${it.course}|${it.title}`;
+const isDone = it => keyOf(it) in marks ? marks[keyOf(it)] : !!it.done;
+function toggle(key){
+  const it = DATA.items.find(i => keyOf(i) === key);
+  if (!it) return;
+  const next = !isDone(it);
+  if (next === !!it.done) delete marks[key]; else marks[key] = next;
+  localSet('sw-done', JSON.stringify(marks));
+  render();
+}
 
 // Dates are plain YYYY-MM-DD in Mountain time; parse at noon so weekday math never slips a day.
 const d = s => new Date(s + 'T12:00:00');
@@ -100,7 +140,8 @@ function color(course){
   const i = list.indexOf(course);
   return PALETTE[(i < 0 ? list.length : i) % PALETTE.length];
 }
-const show = c => filter === 'all' || filter === c;
+const showCourse = c => filter === 'all' || filter === c;
+const showItem = it => showCourse(it.course) && (actFilter === 'all' || it.action === actFilter);
 
 function itemRow(it, ahead){
   const left = ahead
@@ -108,14 +149,16 @@ function itemRow(it, ahead){
     : `<div class="time">${esc(it.time || '')}</div>`;
   const pts = it.points ? `<span>${esc(it.points)} pts</span>` : '';
   const big = ahead && (it.kind === 'exam' || it.big) ? ' big' : '';
-  return `<div class="item${it.done ? ' done' : ''}">
+  const done = isDone(it);
+  return `<div class="item${done ? ' done' : ''}${it.action === 'do' ? ' isdo' : ''}" data-k="${esc(keyOf(it))}" role="checkbox" aria-checked="${done}" tabindex="0">
+    <span class="box"></span>
     ${left}
     <div class="${big}">
-      <div class="title">${it.done ? '<span class="check">✓ </span>' : ''}${esc(it.title)}</div>
-      <div class="meta"><span class="dot" style="background:${color(it.course)}"></span><span>${esc(it.course)}</span>${ahead && it.time ? `<span>${esc(it.time)}</span>` : ''}${pts}</div>
+      <div class="title">${esc(it.title)}</div>
+      <div class="meta"><span class="dot" style="background:${color(it.course)}"></span><span>${esc(it.course)}</span>${ahead && it.time ? `<span>${esc(it.time)}</span>` : ''}${pts}${it.action ? `<span class="act ${it.action}">${ACT_LABEL[it.action]}</span>` : ''}</div>
       ${it.note ? `<div class="note">${esc(it.note)}</div>` : ''}
     </div>
-    <span class="badge ${esc(it.kind)}">${esc(it.kind || 'due')}</span>
+    <span class="badge ${esc(it.kind)}">${esc(it.kind === 'present' ? 'presentation' : it.kind || 'due')}</span>
   </div>`;
 }
 function relDays(s){
@@ -128,19 +171,22 @@ function relDays(s){
 }
 
 const addDays = (s, n) => { const x = d(s); x.setDate(x.getDate() + n); return x.toLocaleDateString('en-CA'); };
-const BIG = new Set(['exam', 'paper', 'project']);
+const BIG = new Set(['exam', 'paper', 'project', 'present']);
 const COUNTED = it => it.kind !== 'event' && !/ opens$/.test(it.title);
 
-// The week shown is Monday–Sunday around today; on Sunday it jumps ahead to the coming week.
+// The week shown is Monday–Sunday around today (on Sunday it jumps ahead to the coming week),
+// shifted by the ‹ › buttons.
 function currentWeek(){
   const t = todayStr(), dow = d(t).getDay();
-  const start = dow === 0 ? addDays(t, 1) : addDays(t, 1 - dow);
+  const start = addDays(dow === 0 ? addDays(t, 1) : addDays(t, 1 - dow), weekOffset * 7);
   return { start, end: addDays(start, 6) };
 }
+const weekName = () => weekOffset === 0 ? 'This week' : weekOffset === 1 ? 'Next week' : weekOffset === -1 ? 'Last week' : 'That week';
 
 function autoSummary(items, aheadBig){
-  const due = items.filter(i => COUNTED(i) && !i.done);
-  if (!due.length) return 'Nothing due this week. ' + (aheadBig[0] ? `Next big thing: ${aheadBig[0].course} ${aheadBig[0].title} (${fmt(aheadBig[0].date,{weekday:'short',month:'short',day:'numeric'})}).` : 'Enjoy it.');
+  const due = items.filter(i => COUNTED(i) && !isDone(i));
+  const total = items.filter(COUNTED).length;
+  if (!due.length) return (total ? `All ${total} things done ✔. ` : `Nothing due ${weekName().toLowerCase()}. `) + (aheadBig[0] ? `Next big thing: ${aheadBig[0].course} ${aheadBig[0].title} (${fmt(aheadBig[0].date,{weekday:'short',month:'short',day:'numeric'})}).` : 'Enjoy it.');
   const byCourse = {};
   due.forEach(i => byCourse[i.course] = (byCourse[i.course] || 0) + 1);
   const busiest = Object.entries(byCourse).sort((a, b) => b[1] - a[1])[0][0];
@@ -149,7 +195,7 @@ function autoSummary(items, aheadBig){
   const heavyDay = Object.entries(byDay).sort((a, b) => b[1] - a[1])[0][0];
   const big = due.filter(i => BIG.has(i.kind));
   const load = due.length >= 16 ? 'A heavy week' : due.length >= 9 ? 'A medium week' : 'A light week';
-  let s = `${load}: ${due.length} things due. ${busiest} has the most going on, and ${fmt(heavyDay,{weekday:'long'})} is the busiest day.`;
+  let s = `${load}: ${due.length} ${total > due.length ? 'left' : 'things due'}. ${busiest} has the most going on, and ${fmt(heavyDay,{weekday:'long'})} is the busiest day.`;
   if (big.length) s += ` Big ones: ${big.map(i => `${i.course} ${i.title} (${fmt(i.date,{weekday:'short'})})`).join('; ')}.`;
   const nextBig = aheadBig[0];
   if (nextBig) s += ` After that, ${nextBig.course} ${nextBig.title} is ${relDays(nextBig.date)}.`;
@@ -158,21 +204,28 @@ function autoSummary(items, aheadBig){
 
 function render(){
   const D = DATA, wk = currentWeek(), t = todayStr();
+  // Heads-up is judged from today on the current week, or from that week's Monday otherwise.
+  const ref = weekOffset === 0 ? t : wk.start;
+  const refDays = s => Math.round((d(s) - d(ref)) / 864e5);
   D.week_start = wk.start; D.week_end = wk.end;
-  $('range').textContent = `Week of ${fmt(D.week_start,{month:'long',day:'numeric'})} – ${fmt(D.week_end,{month:'long',day:'numeric'})}`;
+  $('range').textContent = `${fmt(D.week_start,{month:'short',day:'numeric'})} – ${fmt(D.week_end,{month:'short',day:'numeric'})}`;
+  $('back').hidden = weekOffset === 0;
+  $('weekLabel').textContent = weekName();
   if (D.generated_at) $('updated').textContent = 'Synced ' + new Date(D.generated_at).toLocaleDateString('en-US',{month:'short',day:'numeric'});
-  if (t > D.semester_end) { $('range').textContent = 'Semester over 🎉 — load next semester to keep going.'; }
+  if (weekOffset === 0 && t > D.semester_end) { $('range').textContent = 'Semester over 🎉'; }
 
   D.items_week = (D.items || []).filter(i => i.date >= wk.start && i.date <= wk.end);
   D.lookahead = (D.items || []).filter(i => i.date > wk.end && (BIG.has(i.kind) || i.big));
-  const vis = D.items_week.filter(i => show(i.course));
+  const vis = D.items_week.filter(i => showItem(i));
   $('summary').hidden = false;
-  $('summary').textContent = autoSummary(vis, D.lookahead.filter(i => show(i.course)));
+  $('summary').textContent = autoSummary(vis, D.lookahead.filter(i => showItem(i) && !isDone(i)));
+  const counted = vis.filter(COUNTED), doneN = counted.filter(isDone).length;
+  $('progress').textContent = counted.length ? `· ${doneN}/${counted.length} done` : '';
 
   // Heads-up: hand-written notes in their date window, plus any exam in the next 10 days.
-  const heads = (D.notes || []).filter(n => t >= n.from && t <= n.to);
-  (D.items || []).filter(i => i.kind === 'exam' && daysUntil(i.date) >= 0 && daysUntil(i.date) <= 10 && !i.done)
-    .forEach(i => heads.push({ text: `${i.course} ${i.title} — ${relDays(i.date)} (${fmt(i.date,{weekday:'short',month:'short',day:'numeric'})}${i.time ? ', ' + i.time : ''}).`, urgent: daysUntil(i.date) <= 4 }));
+  const heads = (D.notes || []).filter(n => ref >= n.from && ref <= n.to);
+  (D.items || []).filter(i => i.kind === 'exam' && refDays(i.date) >= 0 && refDays(i.date) <= 10 && !isDone(i))
+    .forEach(i => heads.push({ text: `${i.course} ${i.title} — ${relDays(i.date)} (${fmt(i.date,{weekday:'short',month:'short',day:'numeric'})}${i.time ? ', ' + i.time : ''}).`, urgent: refDays(i.date) <= 4 }));
   $('headsWrap').hidden = !heads.length;
   $('heads').innerHTML = heads.map(h => typeof h === 'string'
     ? `<div class="head">${esc(h)}</div>`
@@ -182,9 +235,12 @@ function render(){
   $('chips').innerHTML = [`<button class="chip${filter==='all'?' on':''}" data-c="all">All classes</button>`]
     .concat(courses.map(c => `<button class="chip${filter===c.code?' on':''}" data-c="${esc(c.code)}" title="${esc(c.name||'')}"><span class="dot" style="background:${color(c.code)}"></span>${esc(c.code)}</button>`)).join('');
   $('chips').querySelectorAll('button').forEach(b => b.onclick = () => { filter = b.dataset.c; localSet('sw-filter', filter); render(); });
+  $('actChips').innerHTML = [['all', 'Everything'], ['turnin', '↑ Turn in'], ['do', 'Just do']]
+    .map(([v, l]) => `<button class="chip${actFilter === v ? ' on' : ''}" data-a="${v}">${l}</button>`).join('');
+  $('actChips').querySelectorAll('button').forEach(b => b.onclick = () => { actFilter = b.dataset.a; localSet('sw-act', actFilter); render(); });
 
   // This week: one card per day, Monday → Sunday.
-  const items = D.items_week.filter(i => show(i.course));
+  const items = D.items_week.filter(i => showItem(i));
   let html = '';
   for (let x = d(D.week_start); x <= d(D.week_end); x.setDate(x.getDate() + 1)){
     const ds = x.toLocaleDateString('en-CA');
@@ -195,11 +251,26 @@ function render(){
       ${list.length ? list.map(i => itemRow(i, false)).join('') : '<div class="empty">Nothing due.</div>'}
     </div>`;
   }
-  $('week').innerHTML = html || '<div class="card empty">Nothing due this week 🎉</div>';
+  $('week').innerHTML = html || `<div class="card empty">Nothing due ${weekName().toLowerCase()} 🎉</div>`;
 
-  const ahead = D.lookahead.filter(i => show(i.course));
+  const ahead = D.lookahead.filter(i => showItem(i));
   $('ahead').innerHTML = ahead.length ? ahead.map(i => itemRow(i, true)).join('') : '<div class="empty">Nothing big on the horizon.</div>';
 }
+
+function go(n){ weekOffset = n === 0 ? 0 : weekOffset + n; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+$('prev').onclick = () => go(-1);
+$('next').onclick = () => go(1);
+$('back').onclick = () => go(0);
+document.addEventListener('keydown', e => {
+  if (!DATA || e.target.closest('input,textarea')) return;
+  if (e.key === 'ArrowLeft') go(-1);
+  if (e.key === 'ArrowRight') go(1);
+  if ((e.key === ' ' || e.key === 'Enter') && e.target.dataset?.k){ e.preventDefault(); toggle(e.target.dataset.k); }
+});
+document.addEventListener('click', e => {
+  const row = e.target.closest('.item[data-k]');
+  if (row && !getSelection().toString()) toggle(row.dataset.k);
+});
 
 async function load(){
   try {

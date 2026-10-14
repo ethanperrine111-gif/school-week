@@ -21,6 +21,7 @@ const LS = [
   ['2026-11-11', '12:59 pm', 'NDFS 251', 'Lab Manual Ch 15 - Emulsions'],
   ['2026-11-11', '12:59 pm', 'NDFS 251', 'Lab Manual Ch 14 - Eggs'],
   ['2026-11-11', '11:59 pm', 'NDFS 250', 'Food Ingredients #2'],
+  ['2026-11-16', 'start of class', 'NDFS 250', 'Your Current Issue in the News presentation', '2–3 min at the start of class: summarize one food-science news article and explain how it relates to food science. 10 pts. Sick or excused? Tell Dr. Pang ASAP and try to swap with someone who has not presented yet.'],
   ['2026-11-16', '11:59 pm', 'NDFS 250', 'Scientific Literature Review #2'],
   ['2026-11-18', '12:59 pm', 'NDFS 251', 'Lab Manual Ch 13 - Frozen Desserts'],
   ['2026-11-18', '12:59 pm', 'NDFS 251', 'Lab Manual Ch 10 - Freezing'],
@@ -43,6 +44,7 @@ const LS = [
 function kindOf(title, type) {
   if (type === 'wiki_page') return 'reading';
   if (type === 'calendar_event') return 'event';
+  if (/presentation/i.test(title)) return 'present';
   if (/exam|midterm|final/i.test(title)) return 'exam';
   if (/capstone/i.test(title)) return 'project';
   if (/essay|literature review|reflection/i.test(title)) return 'paper';
@@ -75,6 +77,17 @@ const NOTES = {
 };
 for (const it of items) if (NOTES[it.title] && !it.note) it.note = NOTES[it.title];
 
+// "turnin" = you submit something (online quiz, paper, lab manual, form);
+// "do" = nothing to hand in (readings, attending, in-person/Testing Center exams, calendar reminders).
+function actionOf(it) {
+  if (it.kind === 'reading' || it.kind === 'event' || it.kind === 'exam') return 'do';
+  if (it.kind === 'present') return 'do';
+  if (/ opens$|attend a ta review|^attendance$|\(in class\)/i.test(it.title)) return 'do';
+  return 'turnin';
+}
+for (const it of items) it.action = actionOf(it);
+for (const it of items) if (/Attend a TA Review Session/.test(it.title) && !it.note) it.note = 'Go to a TA review session; it gets logged in Canvas.';
+
 // Heads-up notes that show only between `from` and `to`.
 const notes = [
   { from: '2026-10-12', to: '2026-10-17', text: 'NDFS 250 Quiz 3 is only open Fri 10:00 am → Sat 9:00 pm.' },
@@ -83,6 +96,7 @@ const notes = [
   { from: '2026-10-25', to: '2026-11-03', text: 'Exam crunch: CELL 210 Exam 2 closes Thu, NDFS 250 Quiz 4 Fri–Sat, NDFS 250 Midterm 2 ends Tue Nov 3.', urgent: true },
   { from: '2026-10-19', to: '2026-10-31', text: 'SWELL 121 Performance Day is coming up — pick your dives and partners.' },
   { from: '2026-11-08', to: '2026-11-19', text: 'CELL 210 Exam 3 closes Thu Nov 19, right as NDFS 250 has Lit Review #2 (Mon), Quiz 5 (Thu) and the Reflection (Fri).' },
+  { from: '2026-11-09', to: '2026-11-16', text: 'Your NDFS 250 Current Issue presentation is Mon Nov 16 at the start of class. Pick a food-science news article ahead of time. Lit Review #2 is due the same night.', urgent: true },
   { from: '2026-11-15', to: '2026-11-25', text: 'REL A Capstone Project Draft is due Wed Nov 25 (Thanksgiving week). Get it done before the break.' },
   { from: '2026-11-29', to: '2026-12-10', text: 'REL A Capstone Essay (500 pts) is due Thu Dec 10.', urgent: true },
   { from: '2026-12-01', to: '2026-12-07', text: 'NDFS 250 Midterm 3 ends Mon Dec 7.' },
