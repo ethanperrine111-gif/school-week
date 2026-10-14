@@ -77,11 +77,9 @@ footer{margin-top:36px;color:var(--muted);font-size:12px;text-align:center}
   <div id="week"></div>
   <h2>Coming up</h2>
   <div class="card ahead" id="ahead"></div>
-  <footer id="foot">Pulled from Learning Suite and Canvas every Sunday morning.</footer>
+  <footer id="foot">Pulled from Learning Suite and Canvas. The week rolls over on its own every Sunday.</footer>
 </div>
 <script>
-const SB = 'https://beokhhjcujnmbjsiaegw.supabase.co';
-const KEY = 'sb_publishable_MBiFecbPdNQJFw4ew1JdVA_AJx5mOhQ';
 const PALETTE = ['#2563eb','#db2777','#059669','#d97706','#7c3aed','#0891b2','#dc2626','#65a30d'];
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -92,7 +90,8 @@ function localSet(k,v){ try { localStorage.setItem(k,v); } catch {} }
 
 // Dates are plain YYYY-MM-DD in Mountain time; parse at noon so weekday math never slips a day.
 const d = s => new Date(s + 'T12:00:00');
-const todayStr = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Denver' });
+// ?date=YYYY-MM-DD previews another day.
+const todayStr = () => new URLSearchParams(location.search).get('date') || new Date().toLocaleDateString('en-CA', { timeZone: 'America/Denver' });
 const fmt = (s, o) => d(s).toLocaleDateString('en-US', o);
 const daysUntil = s => Math.round((d(s) - d(todayStr())) / 864e5);
 
@@ -128,12 +127,52 @@ function relDays(s){
   return `in ${Math.round(n / 7)} weeks`;
 }
 
+const addDays = (s, n) => { const x = d(s); x.setDate(x.getDate() + n); return x.toLocaleDateString('en-CA'); };
+const BIG = new Set(['exam', 'paper', 'project']);
+const COUNTED = it => it.kind !== 'event' && !/ opens$/.test(it.title);
+
+// The week shown is Monday–Sunday around today; on Sunday it jumps ahead to the coming week.
+function currentWeek(){
+  const t = todayStr(), dow = d(t).getDay();
+  const start = dow === 0 ? addDays(t, 1) : addDays(t, 1 - dow);
+  return { start, end: addDays(start, 6) };
+}
+
+function autoSummary(items, aheadBig){
+  const due = items.filter(i => COUNTED(i) && !i.done);
+  if (!due.length) return 'Nothing due this week. ' + (aheadBig[0] ? `Next big thing: ${aheadBig[0].course} ${aheadBig[0].title} (${fmt(aheadBig[0].date,{weekday:'short',month:'short',day:'numeric'})}).` : 'Enjoy it.');
+  const byCourse = {};
+  due.forEach(i => byCourse[i.course] = (byCourse[i.course] || 0) + 1);
+  const busiest = Object.entries(byCourse).sort((a, b) => b[1] - a[1])[0][0];
+  const byDay = {};
+  due.forEach(i => byDay[i.date] = (byDay[i.date] || 0) + 1);
+  const heavyDay = Object.entries(byDay).sort((a, b) => b[1] - a[1])[0][0];
+  const big = due.filter(i => BIG.has(i.kind));
+  const load = due.length >= 16 ? 'A heavy week' : due.length >= 9 ? 'A medium week' : 'A light week';
+  let s = `${load}: ${due.length} things due. ${busiest} has the most going on, and ${fmt(heavyDay,{weekday:'long'})} is the busiest day.`;
+  if (big.length) s += ` Big ones: ${big.map(i => `${i.course} ${i.title} (${fmt(i.date,{weekday:'short'})})`).join('; ')}.`;
+  const nextBig = aheadBig[0];
+  if (nextBig) s += ` After that, ${nextBig.course} ${nextBig.title} is ${relDays(nextBig.date)}.`;
+  return s;
+}
+
 function render(){
-  const D = DATA;
+  const D = DATA, wk = currentWeek(), t = todayStr();
+  D.week_start = wk.start; D.week_end = wk.end;
   $('range').textContent = `Week of ${fmt(D.week_start,{month:'long',day:'numeric'})} – ${fmt(D.week_end,{month:'long',day:'numeric'})}`;
-  if (D.generated_at) $('updated').textContent = 'Updated ' + new Date(D.generated_at).toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
-  if (D.summary){ $('summary').hidden = false; $('summary').textContent = D.summary; }
-  const heads = D.heads_up || [];
+  if (D.generated_at) $('updated').textContent = 'Synced ' + new Date(D.generated_at).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  if (t > D.semester_end) { $('range').textContent = 'Semester over 🎉 — load next semester to keep going.'; }
+
+  D.items_week = (D.items || []).filter(i => i.date >= wk.start && i.date <= wk.end);
+  D.lookahead = (D.items || []).filter(i => i.date > wk.end && (BIG.has(i.kind) || i.big));
+  const vis = D.items_week.filter(i => show(i.course));
+  $('summary').hidden = false;
+  $('summary').textContent = autoSummary(vis, D.lookahead.filter(i => show(i.course)));
+
+  // Heads-up: hand-written notes in their date window, plus any exam in the next 10 days.
+  const heads = (D.notes || []).filter(n => t >= n.from && t <= n.to);
+  (D.items || []).filter(i => i.kind === 'exam' && daysUntil(i.date) >= 0 && daysUntil(i.date) <= 10 && !i.done)
+    .forEach(i => heads.push({ text: `${i.course} ${i.title} — ${relDays(i.date)} (${fmt(i.date,{weekday:'short',month:'short',day:'numeric'})}${i.time ? ', ' + i.time : ''}).`, urgent: daysUntil(i.date) <= 4 }));
   $('headsWrap').hidden = !heads.length;
   $('heads').innerHTML = heads.map(h => typeof h === 'string'
     ? `<div class="head">${esc(h)}</div>`
@@ -145,8 +184,7 @@ function render(){
   $('chips').querySelectorAll('button').forEach(b => b.onclick = () => { filter = b.dataset.c; localSet('sw-filter', filter); render(); });
 
   // This week: one card per day, Monday → Sunday.
-  const items = (D.items || []).filter(i => show(i.course));
-  const t = todayStr();
+  const items = D.items_week.filter(i => show(i.course));
   let html = '';
   for (let x = d(D.week_start); x <= d(D.week_end); x.setDate(x.getDate() + 1)){
     const ds = x.toLocaleDateString('en-CA');
@@ -159,17 +197,15 @@ function render(){
   }
   $('week').innerHTML = html || '<div class="card empty">Nothing due this week 🎉</div>';
 
-  const ahead = (D.lookahead || []).filter(i => show(i.course) && daysUntil(i.date) >= -1);
+  const ahead = D.lookahead.filter(i => show(i.course));
   $('ahead').innerHTML = ahead.length ? ahead.map(i => itemRow(i, true)).join('') : '<div class="empty">Nothing big on the horizon.</div>';
 }
 
 async function load(){
   try {
-    const r = await fetch(`${SB}/rest/v1/school_week?id=eq.latest&select=data`, { headers: { apikey: KEY, Authorization: 'Bearer ' + KEY } });
+    const r = await fetch('data/semester.json', { cache: 'no-cache' });
     if (!r.ok) throw new Error('HTTP ' + r.status);
-    const rows = await r.json();
-    if (!rows.length) { $('range').textContent = 'No data yet — the first Sunday run will fill this in.'; return; }
-    DATA = rows[0].data;
+    DATA = await r.json();
     render();
   } catch (e) {
     $('range').innerHTML = `<span class="err">Couldn't load this week's data (${esc(e.message)}).</span>`;
