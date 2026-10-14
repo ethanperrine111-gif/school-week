@@ -2,9 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>School Week</title>
-<meta name="theme-color" content="#0b1220">
+<meta name="theme-color" content="#f5f6f8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b1220" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="School Week">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -12,99 +17,146 @@
 :root{
   --bg:#f5f6f8; --card:#ffffff; --ink:#111827; --muted:#6b7280; --line:#e5e7eb;
   --accent:#2563eb; --warn:#b45309; --warnbg:#fef3c7; --danger:#b91c1c; --dangerbg:#fee2e2; --ok:#15803d;
+  --bar:rgba(245,246,248,.88);
 }
 @media (prefers-color-scheme:dark){
   :root{--bg:#0b1220; --card:#111a2c; --ink:#e5e7eb; --muted:#94a3b8; --line:#1f2a40;
-    --accent:#60a5fa; --warn:#fbbf24; --warnbg:#3a2a07; --danger:#f87171; --dangerbg:#3b1010; --ok:#4ade80;}
+    --accent:#60a5fa; --warn:#fbbf24; --warnbg:#3a2a07; --danger:#f87171; --dangerbg:#3b1010; --ok:#4ade80;
+    --bar:rgba(11,18,32,.88);}
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
-.wrap{max-width:860px;margin:0 auto;padding:20px 16px 60px}
-header{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:14px}
-h1{font-size:28px;margin:0;font-weight:800;letter-spacing:-.02em}
-.sub{color:var(--muted);font-size:13px}
-h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:28px 0 10px;font-weight:700}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
-.summary{font-size:15.5px}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;touch-action:manipulation}
+button{font:inherit;color:inherit;touch-action:manipulation}
+.wrap{max-width:860px;margin:0 auto;padding:0 16px calc(48px + env(safe-area-inset-bottom))}
+
+/* Sticky week bar */
+.bar{position:sticky;top:0;z-index:5;background:var(--bar);backdrop-filter:saturate(1.6) blur(12px);-webkit-backdrop-filter:saturate(1.6) blur(12px);
+  margin:0 -16px;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;border-bottom:1px solid var(--line)}
+.barrow{display:flex;align-items:center;gap:10px;max-width:828px;margin:0 auto}
+.navbtn{flex:none;border:1px solid var(--line);background:var(--card);border-radius:12px;width:42px;height:42px;font-size:22px;line-height:1;cursor:pointer;display:grid;place-items:center}
+.navbtn:active{transform:scale(.94)}
+.wk{flex:1;min-width:0;text-align:center;cursor:pointer}
+.wkname{font-weight:800;font-size:17px;letter-spacing:-.01em}
+.wkrange{color:var(--muted);font-size:13px}
+.todaybtn{border:0;background:var(--accent);color:#fff;border-radius:999px;padding:2px 9px;font-size:11.5px;font-weight:700;cursor:pointer;margin-left:6px;vertical-align:1px}
+.ring{flex:none;width:42px;height:42px;position:relative;display:grid;place-items:center;font-size:11px;font-weight:700;color:var(--muted)}
+.ring svg{position:absolute;inset:0;transform:rotate(-90deg)}
+
+header{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:18px 0 12px}
+h1{font-size:26px;margin:0;font-weight:800;letter-spacing:-.02em}
+.sub{color:var(--muted);font-size:12.5px;text-align:right}
+.sync{display:inline-flex;align-items:center;gap:5px}
+.sync i{width:7px;height:7px;border-radius:50%;background:var(--ok);display:inline-block}
+.sync.pending i{background:var(--warn)}
+.sync.off i{background:var(--danger)}
+h2{font-size:12.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:24px 0 10px;font-weight:700}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 16px}
+.summary{font-size:15px}
 .heads{display:grid;gap:8px}
-.head{background:var(--warnbg);color:var(--warn);border-radius:12px;padding:10px 14px;font-weight:500}
+.head{background:var(--warnbg);color:var(--warn);border-radius:12px;padding:10px 14px;font-weight:500;font-size:14.5px}
 .head.urgent{background:var(--dangerbg);color:var(--danger)}
-.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px}
-.chip{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:5px 11px;font:inherit;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
-.chip.on{border-color:var(--ink)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 12px;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;flex:none}
+.chip.on{border-color:var(--ink);background:var(--ink);color:var(--bg)}
+.chip:hover{border-color:var(--muted)}
 .dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
-.day{margin-bottom:10px}
-.dayhead{display:flex;justify-content:space-between;align-items:baseline;padding:2px 2px 6px}
+
+.day{margin-bottom:10px;padding-top:10px;padding-bottom:4px}
+.dayhead{display:flex;justify-content:space-between;align-items:baseline;padding:0 0 4px}
 .dayname{font-weight:700}
 .daydate{color:var(--muted);font-size:13px}
+.today{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
 .today .dayname::after{content:"TODAY";font-size:10px;font-weight:800;letter-spacing:.08em;background:var(--accent);color:#fff;border-radius:5px;padding:2px 6px;margin-left:8px;vertical-align:2px}
-.item{display:grid;grid-template-columns:70px 1fr auto;gap:10px;align-items:start;padding:10px 0;border-top:1px solid var(--line)}
+
+.item{display:grid;grid-template-columns:28px 70px 1fr auto;gap:10px;align-items:start;padding:11px 0;border-top:1px solid var(--line);cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 .item:first-child{border-top:0}
-.time{color:var(--muted);font-size:13px;padding-top:1px;font-variant-numeric:tabular-nums}
-.title{font-weight:600}
-.meta{color:var(--muted);font-size:13px;margin-top:2px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.note{font-size:13px;margin-top:4px}
+.ahead .item{grid-template-columns:28px 86px 1fr auto}
+.item:active{opacity:.7}
+.box{width:24px;height:24px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;transition:background .15s,border-color .15s,transform .15s}
+.item:hover .box{border-color:var(--muted)}
+.item.isdo .box{border-style:dashed}
+.done .box{background:var(--ok);border-color:var(--ok);border-style:solid;transform:scale(1.05)}
+.done .box::after{content:"";width:6px;height:11px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.time{color:var(--muted);font-size:13px;padding-top:2px;font-variant-numeric:tabular-nums}
+.title{font-weight:600;overflow-wrap:anywhere}
+.item.isdo:not(.done) .title{font-weight:500}
+.done .title{text-decoration:line-through;color:var(--muted)}
+.meta{color:var(--muted);font-size:13px;margin-top:3px;display:flex;gap:4px 8px;flex-wrap:wrap;align-items:center}
+.meta .mtime{display:none;font-weight:600;color:var(--ink)}
+.note{font-size:13px;margin-top:4px;color:var(--muted)}
+.done .note,.done .meta{opacity:.6}
 .badge{font-size:11px;font-weight:700;border-radius:6px;padding:2px 7px;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;background:var(--line);color:var(--muted)}
 .badge.exam{background:var(--dangerbg);color:var(--danger)}
 .badge.project,.badge.paper,.badge.present{background:var(--warnbg);color:var(--warn)}
 .badge.quiz{background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)}
-.done .title{text-decoration:line-through;color:var(--muted)}
 .done .badge{opacity:.5}
-.check{color:var(--ok);font-weight:700}
-.empty{color:var(--muted);font-size:14px;padding:4px 0}
-.ahead .item{grid-template-columns:86px 1fr auto}
-.when{font-weight:700;font-size:13px}
-.when small{display:block;color:var(--muted);font-weight:500}
-.big{border-left:3px solid var(--danger);padding-left:10px;margin-left:-13px}
-footer{margin-top:36px;color:var(--muted);font-size:12px;text-align:center}
-.err{color:var(--danger)}
-.weeknav{display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap}
-.navbtn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;width:34px;height:34px;font:inherit;font-size:18px;line-height:1;cursor:pointer;display:grid;place-items:center}
-.navbtn:hover,.chip:hover{border-color:var(--muted)}
-.weeknav .sub{font-size:14px;font-weight:600;color:var(--ink);min-width:0}
-.todaybtn{border:0;background:var(--accent);color:#fff;border-radius:999px;padding:6px 12px;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}
-.item{grid-template-columns:24px 70px 1fr auto;cursor:pointer;-webkit-tap-highlight-color:transparent}
-.ahead .item{grid-template-columns:24px 86px 1fr auto}
-.box{width:20px;height:20px;border-radius:50%;border:2px solid var(--line);margin-top:1px;display:grid;place-items:center;transition:background .15s,border-color .15s}
-.item:hover .box{border-color:var(--muted)}
-.done .box{background:var(--ok);border-color:var(--ok)}
-.done .box::after{content:"";width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-1px)}
-.done .note,.done .meta{opacity:.6}
-.progress{font-size:12px;color:var(--muted);font-weight:500}
 .act{font-size:11.5px;font-weight:700;border-radius:6px;padding:1px 7px;white-space:nowrap}
 .act.turnin{background:var(--accent);color:#fff}
 .act.do{border:1px dashed var(--muted);color:var(--muted)}
-.item.isdo:not(.done) .title{font-weight:500}
-.item.isdo .box{border-style:dashed}
-.chips + .chips{margin-top:8px}
-@media (max-width:520px){h1{font-size:24px}.item,.ahead .item{grid-template-columns:24px 62px 1fr}.item .badge{grid-column:3;justify-self:start}}
+.when{font-weight:700;font-size:13px}
+.when small{display:block;color:var(--muted);font-weight:500}
+.big .title::before{content:"";display:inline-block;width:4px;height:14px;border-radius:2px;background:var(--danger);margin-right:7px;vertical-align:-1px}
+.empty{color:var(--muted);font-size:14px;padding:8px 0}
+.progress{font-size:12px;color:var(--muted);font-weight:500;text-transform:none;letter-spacing:0}
+footer{margin-top:32px;color:var(--muted);font-size:12px;text-align:center;line-height:1.6}
+.err{color:var(--danger)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translate(-50%,120px);background:var(--ink);color:var(--bg);border-radius:12px;padding:10px 14px;font-size:14px;font-weight:600;display:flex;gap:14px;align-items:center;transition:transform .25s;z-index:10;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.toast.show{transform:translate(-50%,0)}
+.toast button{border:0;background:none;color:var(--accent);font-weight:800;cursor:pointer;padding:4px}
+#main{transition:opacity .15s,transform .15s}
+#main.slide-l{opacity:0;transform:translateX(-24px)}
+#main.slide-r{opacity:0;transform:translateX(24px)}
+
+@media (max-width:600px){
+  h1{font-size:22px}
+  header{margin:14px 0 10px}
+  .chips{flex-wrap:nowrap;overflow-x:auto;margin:10px -16px 0;padding:0 16px 2px;scrollbar-width:none}
+  .chips::-webkit-scrollbar{display:none}
+  .item,.ahead .item{grid-template-columns:28px 1fr;gap:12px;padding:12px 0}
+  .item > .time,.item > .badge{display:none}
+  .meta .mtime{display:inline}
+  .ahead .item{grid-template-columns:28px 54px 1fr}
+  .ahead .item > .badge{display:none}
+  .card{padding:10px 14px;border-radius:14px}
+  .summary{font-size:14.5px}
+}
+@media (hover:none){ .item:hover .box{border-color:var(--line)} .done .box{border-color:var(--ok)} }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <div>
-      <h1 id="title">School Week</h1>
-      <div class="weeknav">
-        <button class="navbtn" id="prev" aria-label="Previous week">‹</button>
-        <div class="sub" id="range">Loading…</div>
-        <button class="navbtn" id="next" aria-label="Next week">›</button>
-        <button class="todaybtn" id="back" hidden>Back to this week</button>
+  <div class="bar">
+    <div class="barrow">
+      <button class="navbtn" id="prev" aria-label="Previous week">‹</button>
+      <div class="wk" id="wk" title="Back to this week">
+        <div class="wkname"><span id="weekLabel">This week</span><button class="todaybtn" id="back" hidden>Today</button></div>
+        <div class="wkrange" id="range">Loading…</div>
       </div>
+      <div class="ring" id="ring" aria-label="Progress"></div>
+      <button class="navbtn" id="next" aria-label="Next week">›</button>
     </div>
-    <div class="sub" id="updated"></div>
+  </div>
+  <header>
+    <h1>School Week</h1>
+    <div class="sub"><span class="sync" id="sync"><i></i><span id="syncText">Syncing…</span></span></div>
   </header>
-  <div class="card summary" id="summary" hidden></div>
-  <div id="headsWrap" hidden><h2>Heads up</h2><div class="heads" id="heads"></div></div>
-  <div class="chips" id="chips"></div>
-  <div class="chips" id="actChips"></div>
-  <h2><span id="weekLabel">This week</span> <span class="progress" id="progress"></span></h2>
-  <div id="week"></div>
-  <h2>Coming up</h2>
-  <div class="card ahead" id="ahead"></div>
-  <footer id="foot">Pulled from Learning Suite and Canvas. Tap anything to cross it off (saved on this device). Use ‹ › or the arrow keys to change weeks.</footer>
+  <div id="main">
+    <div class="card summary" id="summary" hidden></div>
+    <div id="headsWrap" hidden><h2>Heads up</h2><div class="heads" id="heads"></div></div>
+    <div class="chips" id="chips"></div>
+    <div class="chips" id="actChips"></div>
+    <h2><span id="weekLabel2">This week</span> <span class="progress" id="progress"></span></h2>
+    <div id="week"></div>
+    <h2>Coming up</h2>
+    <div class="card ahead" id="ahead"></div>
+  </div>
+  <footer id="foot">Tap anything to cross it off — it syncs to all your devices.<br>Swipe or use ‹ › to change weeks. Pulled from Learning Suite and Canvas<span id="updated"></span>.</footer>
 </div>
+<div class="toast" id="toast"><span id="toastText"></span><button id="undo">Undo</button></div>
 <script>
+const SB = 'https://beokhhjcujnmbjsiaegw.supabase.co';
+const SBKEY = 'sb_publishable_MBiFecbPdNQJFw4ew1JdVA_AJx5mOhQ';
 const PALETTE = ['#2563eb','#db2777','#059669','#d97706','#7c3aed','#0891b2','#dc2626','#65a30d'];
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -113,27 +165,80 @@ const ACT_LABEL = { turnin: '↑ Turn in', do: 'Just do' };
 
 function localGet(k){ try { return localStorage.getItem(k); } catch { return null; } }
 function localSet(k,v){ try { localStorage.setItem(k,v); } catch {} }
+const loadJSON = k => { try { return JSON.parse(localGet(k) || '{}') || {}; } catch { return {}; } };
 
-// Crossed-off state: your taps override the synced `done` flag, saved per device.
-let marks = {};
-try { marks = JSON.parse(localGet('sw-done') || '{}') || {}; } catch {}
+// ---- Crossed-off state, synced through Supabase ----
+// marks: key -> true/false from the server (cached locally so it shows instantly and offline).
+// pending: taps not yet confirmed by the server; they win over server values until sent.
+let marks = loadJSON('sw-marks'), pending = loadJSON('sw-pending');
+if (localGet('sw-done') && !localGet('sw-migrated')) {            // check-offs made before sync existed
+  Object.assign(pending, loadJSON('sw-done'));
+  localSet('sw-migrated', '1'); localSet('sw-pending', JSON.stringify(pending));
+}
 const keyOf = it => `${it.date}|${it.course}|${it.title}`;
-const isDone = it => keyOf(it) in marks ? marks[keyOf(it)] : !!it.done;
-function toggle(key){
+const markOf = k => k in pending ? pending[k] : marks[k];
+const isDone = it => { const m = markOf(keyOf(it)); return m === undefined ? !!it.done : m; };
+const sbHeaders = { apikey: SBKEY, Authorization: 'Bearer ' + SBKEY, 'Content-Type': 'application/json' };
+
+function setSync(state, text){ $('sync').className = 'sync ' + state; $('syncText').textContent = text; }
+
+async function pull(){
+  try {
+    const r = await fetch(`${SB}/rest/v1/school_marks?select=k,done`, { headers: sbHeaders, cache: 'no-store' });
+    if (!r.ok) throw new Error(r.status);
+    const next = {};
+    (await r.json()).forEach(row => next[row.k] = row.done);
+    const changed = JSON.stringify(next) !== JSON.stringify(marks);
+    marks = next; localSet('sw-marks', JSON.stringify(marks));
+    if (!Object.keys(pending).length) setSync('', 'Synced');
+    if (changed && DATA) render();
+  } catch { setSync('off', 'Offline'); }
+}
+
+let pushing = false;
+async function push(){
+  if (pushing) return;
+  pushing = true;
+  try {
+    for (const [k, v] of Object.entries(pending)) {
+      setSync('pending', 'Saving…');
+      const r = await fetch(`${SB}/rest/v1/rpc/set_school_mark`, { method: 'POST', headers: sbHeaders, body: JSON.stringify({ k, v }) });
+      if (!r.ok) throw new Error(r.status);
+      marks[k] = v;
+      if (pending[k] === v) delete pending[k];   // a newer tap may have landed meanwhile
+      localSet('sw-pending', JSON.stringify(pending)); localSet('sw-marks', JSON.stringify(marks));
+    }
+    setSync('', 'Synced');
+  } catch { setSync('off', 'Offline — will sync'); }
+  pushing = false;
+  if (Object.keys(pending).length && navigator.onLine !== false) setTimeout(push, 4000);
+}
+
+let lastToggle = null, toastTimer = null;
+function toggle(key, fromUndo){
   const it = DATA.items.find(i => keyOf(i) === key);
   if (!it) return;
   const next = !isDone(it);
-  if (next === !!it.done) delete marks[key]; else marks[key] = next;
-  localSet('sw-done', JSON.stringify(marks));
-  render();
+  pending[key] = next; localSet('sw-pending', JSON.stringify(pending));
+  if (navigator.vibrate) navigator.vibrate(next ? 12 : 6);
+  render(); push();
+  if (!fromUndo) {
+    lastToggle = key;
+    $('toastText').textContent = next ? 'Crossed off' : 'Marked not done';
+    $('toast').classList.add('show');
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').classList.remove('show'), 3000);
+  }
 }
+$('undo').onclick = e => { e.stopPropagation(); $('toast').classList.remove('show'); if (lastToggle) toggle(lastToggle, true); lastToggle = null; };
 
+// ---- Dates ----
 // Dates are plain YYYY-MM-DD in Mountain time; parse at noon so weekday math never slips a day.
 const d = s => new Date(s + 'T12:00:00');
 // ?date=YYYY-MM-DD previews another day.
 const todayStr = () => new URLSearchParams(location.search).get('date') || new Date().toLocaleDateString('en-CA', { timeZone: 'America/Denver' });
 const fmt = (s, o) => d(s).toLocaleDateString('en-US', o);
 const daysUntil = s => Math.round((d(s) - d(todayStr())) / 864e5);
+const addDays = (s, n) => { const x = d(s); x.setDate(x.getDate() + n); return x.toLocaleDateString('en-CA'); };
 
 function color(course){
   const list = (DATA.courses || []).map(c => c.code);
@@ -142,23 +247,26 @@ function color(course){
 }
 const showCourse = c => filter === 'all' || filter === c;
 const showItem = it => showCourse(it.course) && (actFilter === 'all' || it.action === actFilter);
+const BIG = new Set(['exam', 'paper', 'project', 'present']);
+const COUNTED = it => it.kind !== 'event' && !/ opens$/.test(it.title);
+const badgeText = it => it.kind === 'present' ? 'presentation' : it.kind || 'due';
 
 function itemRow(it, ahead){
   const left = ahead
     ? `<div class="when">${fmt(it.date,{month:'short',day:'numeric'})}<small>${relDays(it.date)}</small></div>`
     : `<div class="time">${esc(it.time || '')}</div>`;
   const pts = it.points ? `<span>${esc(it.points)} pts</span>` : '';
-  const big = ahead && (it.kind === 'exam' || it.big) ? ' big' : '';
   const done = isDone(it);
+  const mtime = !ahead && it.time ? `<span class="mtime">${esc(it.time)}</span>` : '';
   return `<div class="item${done ? ' done' : ''}${it.action === 'do' ? ' isdo' : ''}" data-k="${esc(keyOf(it))}" role="checkbox" aria-checked="${done}" tabindex="0">
     <span class="box"></span>
     ${left}
-    <div class="${big}">
+    <div class="${ahead && (it.kind === 'exam' || it.big) ? 'big' : ''}">
       <div class="title">${esc(it.title)}</div>
-      <div class="meta"><span class="dot" style="background:${color(it.course)}"></span><span>${esc(it.course)}</span>${ahead && it.time ? `<span>${esc(it.time)}</span>` : ''}${pts}${it.action ? `<span class="act ${it.action}">${ACT_LABEL[it.action]}</span>` : ''}</div>
+      <div class="meta">${mtime}<span class="dot" style="background:${color(it.course)}"></span><span>${esc(it.course)}</span>${ahead && it.time ? `<span>${esc(it.time)}</span>` : ''}${pts}${it.action ? `<span class="act ${it.action}">${ACT_LABEL[it.action]}</span>` : ''}</div>
       ${it.note ? `<div class="note">${esc(it.note)}</div>` : ''}
     </div>
-    <span class="badge ${esc(it.kind)}">${esc(it.kind === 'present' ? 'presentation' : it.kind || 'due')}</span>
+    <span class="badge ${esc(it.kind)}">${esc(badgeText(it))}</span>
   </div>`;
 }
 function relDays(s){
@@ -170,18 +278,14 @@ function relDays(s){
   return `in ${Math.round(n / 7)} weeks`;
 }
 
-const addDays = (s, n) => { const x = d(s); x.setDate(x.getDate() + n); return x.toLocaleDateString('en-CA'); };
-const BIG = new Set(['exam', 'paper', 'project', 'present']);
-const COUNTED = it => it.kind !== 'event' && !/ opens$/.test(it.title);
-
 // The week shown is Monday–Sunday around today (on Sunday it jumps ahead to the coming week),
-// shifted by the ‹ › buttons.
+// shifted by the ‹ › buttons or a swipe.
 function currentWeek(){
   const t = todayStr(), dow = d(t).getDay();
   const start = addDays(dow === 0 ? addDays(t, 1) : addDays(t, 1 - dow), weekOffset * 7);
   return { start, end: addDays(start, 6) };
 }
-const weekName = () => weekOffset === 0 ? 'This week' : weekOffset === 1 ? 'Next week' : weekOffset === -1 ? 'Last week' : 'That week';
+const weekName = () => weekOffset === 0 ? 'This week' : weekOffset === 1 ? 'Next week' : weekOffset === -1 ? 'Last week' : weekOffset > 0 ? `In ${weekOffset} weeks` : `${-weekOffset} weeks ago`;
 
 function autoSummary(items, aheadBig){
   const due = items.filter(i => COUNTED(i) && !isDone(i));
@@ -202,34 +306,38 @@ function autoSummary(items, aheadBig){
   return s;
 }
 
+function ring(done, total){
+  const r = 18, c = 2 * Math.PI * r, f = total ? done / total : 0;
+  return `<svg viewBox="0 0 42 42" width="42" height="42"><circle cx="21" cy="21" r="${r}" fill="none" stroke="var(--line)" stroke-width="4"/>
+    <circle cx="21" cy="21" r="${r}" fill="none" stroke="var(--ok)" stroke-width="4" stroke-linecap="round" stroke-dasharray="${c * f} ${c}"/></svg><span>${total ? done + '/' + total : '–'}</span>`;
+}
+
 function render(){
   const D = DATA, wk = currentWeek(), t = todayStr();
   // Heads-up is judged from today on the current week, or from that week's Monday otherwise.
   const ref = weekOffset === 0 ? t : wk.start;
   const refDays = s => Math.round((d(s) - d(ref)) / 864e5);
-  D.week_start = wk.start; D.week_end = wk.end;
-  $('range').textContent = `${fmt(D.week_start,{month:'short',day:'numeric'})} – ${fmt(D.week_end,{month:'short',day:'numeric'})}`;
+  $('range').textContent = `${fmt(wk.start,{month:'short',day:'numeric'})} – ${fmt(wk.end,{month:'short',day:'numeric'})}`;
   $('back').hidden = weekOffset === 0;
-  $('weekLabel').textContent = weekName();
-  if (D.generated_at) $('updated').textContent = 'Synced ' + new Date(D.generated_at).toLocaleDateString('en-US',{month:'short',day:'numeric'});
-  if (weekOffset === 0 && t > D.semester_end) { $('range').textContent = 'Semester over 🎉'; }
+  $('weekLabel').textContent = $('weekLabel2').textContent = weekName();
+  if (D.generated_at) $('updated').textContent = ' on ' + new Date(D.generated_at).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  if (weekOffset === 0 && t > D.semester_end) $('range').textContent = 'Semester over 🎉';
 
-  D.items_week = (D.items || []).filter(i => i.date >= wk.start && i.date <= wk.end);
-  D.lookahead = (D.items || []).filter(i => i.date > wk.end && (BIG.has(i.kind) || i.big));
-  const vis = D.items_week.filter(i => showItem(i));
+  const week = (D.items || []).filter(i => i.date >= wk.start && i.date <= wk.end);
+  const lookahead = (D.items || []).filter(i => i.date > wk.end && (BIG.has(i.kind) || i.big));
+  const vis = week.filter(showItem);
   $('summary').hidden = false;
-  $('summary').textContent = autoSummary(vis, D.lookahead.filter(i => showItem(i) && !isDone(i)));
+  $('summary').textContent = autoSummary(vis, lookahead.filter(i => showItem(i) && !isDone(i)));
   const counted = vis.filter(COUNTED), doneN = counted.filter(isDone).length;
   $('progress').textContent = counted.length ? `· ${doneN}/${counted.length} done` : '';
+  $('ring').innerHTML = ring(doneN, counted.length);
 
   // Heads-up: hand-written notes in their date window, plus any exam in the next 10 days.
   const heads = (D.notes || []).filter(n => ref >= n.from && ref <= n.to);
   (D.items || []).filter(i => i.kind === 'exam' && refDays(i.date) >= 0 && refDays(i.date) <= 10 && !isDone(i))
     .forEach(i => heads.push({ text: `${i.course} ${i.title} — ${relDays(i.date)} (${fmt(i.date,{weekday:'short',month:'short',day:'numeric'})}${i.time ? ', ' + i.time : ''}).`, urgent: refDays(i.date) <= 4 }));
   $('headsWrap').hidden = !heads.length;
-  $('heads').innerHTML = heads.map(h => typeof h === 'string'
-    ? `<div class="head">${esc(h)}</div>`
-    : `<div class="head${h.urgent ? ' urgent' : ''}">${esc(h.text)}</div>`).join('');
+  $('heads').innerHTML = heads.map(h => `<div class="head${h.urgent ? ' urgent' : ''}">${esc(h.text)}</div>`).join('');
 
   const courses = D.courses || [];
   $('chips').innerHTML = [`<button class="chip${filter==='all'?' on':''}" data-c="all">All classes</button>`]
@@ -239,12 +347,10 @@ function render(){
     .map(([v, l]) => `<button class="chip${actFilter === v ? ' on' : ''}" data-a="${v}">${l}</button>`).join('');
   $('actChips').querySelectorAll('button').forEach(b => b.onclick = () => { actFilter = b.dataset.a; localSet('sw-act', actFilter); render(); });
 
-  // This week: one card per day, Monday → Sunday.
-  const items = D.items_week.filter(i => showItem(i));
+  // The week: one card per day, Monday → Sunday.
   let html = '';
-  for (let x = d(D.week_start); x <= d(D.week_end); x.setDate(x.getDate() + 1)){
-    const ds = x.toLocaleDateString('en-CA');
-    const list = items.filter(i => i.date === ds);
+  for (let ds = wk.start; ds <= wk.end; ds = addDays(ds, 1)){
+    const list = vis.filter(i => i.date === ds);
     if (!list.length && ds !== t) continue;
     html += `<div class="day card${ds === t ? ' today' : ''}">
       <div class="dayhead"><span class="dayname">${fmt(ds,{weekday:'long'})}</span><span class="daydate">${fmt(ds,{month:'short',day:'numeric'})}</span></div>
@@ -253,25 +359,45 @@ function render(){
   }
   $('week').innerHTML = html || `<div class="card empty">Nothing due ${weekName().toLowerCase()} 🎉</div>`;
 
-  const ahead = D.lookahead.filter(i => showItem(i));
+  const ahead = lookahead.filter(showItem);
   $('ahead').innerHTML = ahead.length ? ahead.map(i => itemRow(i, true)).join('') : '<div class="empty">Nothing big on the horizon.</div>';
 }
 
-function go(n){ weekOffset = n === 0 ? 0 : weekOffset + n; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+// ---- Week navigation: buttons, arrow keys, swipe ----
+function go(n){
+  const to = n === 0 ? 0 : weekOffset + n;
+  if (to === weekOffset) return;
+  const m = $('main');
+  m.classList.add(to > weekOffset ? 'slide-l' : 'slide-r');
+  weekOffset = to;
+  setTimeout(() => { render(); m.classList.remove('slide-l', 'slide-r'); }, 120);
+  if (window.scrollY > 0) window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 $('prev').onclick = () => go(-1);
 $('next').onclick = () => go(1);
-$('back').onclick = () => go(0);
+$('back').onclick = e => { e.stopPropagation(); go(0); };
+$('wk').onclick = () => go(0);
 document.addEventListener('keydown', e => {
   if (!DATA || e.target.closest('input,textarea')) return;
   if (e.key === 'ArrowLeft') go(-1);
   if (e.key === 'ArrowRight') go(1);
   if ((e.key === ' ' || e.key === 'Enter') && e.target.dataset?.k){ e.preventDefault(); toggle(e.target.dataset.k); }
 });
+let tx = null, ty = 0, swiped = false;
+$('main').addEventListener('touchstart', e => { if (e.target.closest('.chips')) { tx = null; return; } tx = e.touches[0].clientX; ty = e.touches[0].clientY; swiped = false; }, { passive: true });
+$('main').addEventListener('touchend', e => {
+  if (tx === null) return;
+  const dx = e.changedTouches[0].clientX - tx, dy = e.changedTouches[0].clientY - ty;
+  if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.8) { swiped = true; go(dx < 0 ? 1 : -1); }
+  tx = null;
+}, { passive: true });
 document.addEventListener('click', e => {
   const row = e.target.closest('.item[data-k]');
-  if (row && !getSelection().toString()) toggle(row.dataset.k);
+  if (row && !swiped) toggle(row.dataset.k);
+  swiped = false;
 });
 
+// ---- Load + keep in sync ----
 async function load(){
   try {
     const r = await fetch('data/semester.json', { cache: 'no-cache' });
@@ -279,10 +405,16 @@ async function load(){
     DATA = await r.json();
     render();
   } catch (e) {
-    $('range').innerHTML = `<span class="err">Couldn't load this week's data (${esc(e.message)}).</span>`;
+    $('range').innerHTML = `<span class="err">Couldn't load (${esc(e.message)})</span>`;
+    return;
   }
+  await pull();
+  if (Object.keys(pending).length) push();
 }
 load();
+document.addEventListener('visibilitychange', () => { if (!document.hidden && DATA) { pull(); push(); } });
+window.addEventListener('online', () => { pull(); push(); });
+setInterval(() => { if (!document.hidden && DATA) pull(); }, 20000);
 </script>
 </body>
 </html>
