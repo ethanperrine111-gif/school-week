@@ -82,11 +82,11 @@ for (const it of items) if (NOTES[it.title] && !it.note) it.note = NOTES[it.titl
 function actionOf(it) {
   if (it.kind === 'reading' || it.kind === 'event' || it.kind === 'exam') return 'do';
   if (it.kind === 'present') return 'do';
-  if (/ opens$|attend a ta review|^attendance$|\(in class\)/i.test(it.title)) return 'do';
+  if (/ opens$|^attendance$|\(in class\)/i.test(it.title)) return 'do';
   return 'turnin';
 }
 for (const it of items) it.action = actionOf(it);
-for (const it of items) if (/Attend a TA Review Session/.test(it.title) && !it.note) it.note = 'Go to a TA review session; it gets logged in Canvas.';
+for (const it of items) if (/Attend a TA Review Session/.test(it.title) && !it.note) it.note = 'Go to a TA review session, then turn it in on Canvas.';
 
 // Heads-up notes that show only between `from` and `to`.
 const notes = [
