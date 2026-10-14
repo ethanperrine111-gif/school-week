@@ -214,12 +214,19 @@ async function push(){
   if (Object.keys(pending).length && navigator.onLine !== false) setTimeout(push, 4000);
 }
 
+// "Quiz 3 opens" and "Quiz 3 closes" are one thing: checking either checks both.
+const pairOf = it => `${it.course}|${it.title.replace(/ (opens|closes)$/i, '')}`;
+const linked = it => /\s(opens|closes)$/i.test(it.title)
+  ? DATA.items.filter(i => pairOf(i) === pairOf(it) && Math.abs(d(i.date) - d(it.date)) <= 14 * 864e5)
+  : [it];
+
 let lastToggle = null, toastTimer = null;
 function toggle(key, fromUndo){
   const it = DATA.items.find(i => keyOf(i) === key);
   if (!it) return;
   const next = !isDone(it);
-  pending[key] = next; localSet('sw-pending', JSON.stringify(pending));
+  linked(it).forEach(i => pending[keyOf(i)] = next);
+  localSet('sw-pending', JSON.stringify(pending));
   if (navigator.vibrate) navigator.vibrate(next ? 12 : 6);
   render(); push();
   if (!fromUndo) {
